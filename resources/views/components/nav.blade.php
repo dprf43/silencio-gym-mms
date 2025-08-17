@@ -15,18 +15,15 @@
                 Members
                 <x-slot name="dropdownContent">
                     <x-nav-sub-item src="images/icons/members-icon.svg" href="/members">Members</x-nav-sub-item>
-                    <x-nav-sub-item src="images/icons/members-icon.svg" href="/members/active">Membership Plans</x-nav-sub-item>
+                    <x-nav-sub-item src="images/icons/members-icon.svg" href="/membership/plans">Membership Plans</x-nav-sub-item>
                 </x-slot>
             </x-nav-item>
             
-            <x-nav-item src="images/icons/payments-icon.svg" dropdown="true" dataTitle="Payments">
-                Payments
-                <x-slot name="dropdownContent">
-                    <x-nav-sub-item src="images/icons/payments-icon.svg" href="/payments/pending">Pending Payments</x-nav-sub-item>
-                    <x-nav-sub-item src="images/icons/payments-icon.svg" href="/payments/completed">Completed Payments</x-nav-sub-item>
-                    <x-nav-sub-item src="images/icons/payments-icon.svg" href="/payments/failed">Failed Payments</x-nav-sub-item>
-                </x-slot>
-            </x-nav-item>
+            <x-nav-item src="images/icons/payments-icon.svg" href="/membership/payments" dataTitle="All Payments">All Payments</x-nav-item>
+            
+            <x-nav-item src="images/icons/search-icon.svg" href="/membership/manage-member" dataTitle="Member Plan Management">Member Plans</x-nav-item>
+            
+            <x-nav-item src="images/icons/search-icon.svg" href="/rfid-monitor" dataTitle="RFID Monitor">RFID Monitor</x-nav-item>
         </nav>
     </div>
 </aside>

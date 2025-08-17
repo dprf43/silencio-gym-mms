@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Models\MembershipPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -109,5 +110,44 @@ class MemberController extends Controller
 
         return redirect()->route('members.index')
             ->with('success', 'Member deleted successfully!');
+    }
+
+    /**
+     * Display member profile with membership history
+     */
+    public function profile(string $id)
+    {
+        $member = Member::with(['membershipPeriods.payment'])->findOrFail($id);
+        
+        // Get all membership periods (current and historical)
+        $membershipPeriods = $member->membershipPeriods()
+            ->with('payment')
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        // Get current active membership
+        $currentMembership = $member->currentMembershipPeriod;
+
+        // Get payment history
+        $payments = $member->payments()
+            ->orderBy('payment_date', 'desc')
+            ->get();
+
+        return view('members.profile', compact('member', 'membershipPeriods', 'currentMembership', 'payments'));
+    }
+
+    /**
+     * Display membership history for a member
+     */
+    public function membershipHistory(string $id)
+    {
+        $member = Member::findOrFail($id);
+        
+        $membershipPeriods = $member->membershipPeriods()
+            ->with('payment')
+            ->orderBy('start_date', 'desc')
+            ->paginate(10);
+
+        return view('members.membership-history', compact('member', 'membershipPeriods'));
     }
 }
