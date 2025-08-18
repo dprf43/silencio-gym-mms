@@ -42,9 +42,14 @@ class Member extends Model
         return $this->hasMany(Payment::class);
     }
 
-    public function activeSession(): HasOne
+    public function attendances(): HasMany
     {
-        return $this->hasOne(ActiveSession::class);
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function activeSessions(): HasMany
+    {
+        return $this->hasMany(ActiveSession::class);
     }
 
     public function getIsActiveAttribute(): bool

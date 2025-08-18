@@ -12,6 +12,18 @@ Route::get('/', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// RFID routes (public access for hardware integration)
+Route::prefix('rfid')->name('rfid.')->group(function () {
+    Route::post('tap', [RfidController::class, 'handleCardTap'])->name('tap')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+    Route::get('active-members', [RfidController::class, 'getActiveMembers'])->name('active-members')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+    Route::get('logs', [RfidController::class, 'getRfidLogs'])->name('logs')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class, \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+    
+    // RFID Automation routes (protected by auth)
+    Route::post('start', [RfidController::class, 'startRfidReader'])->name('start');
+    Route::post('stop', [RfidController::class, 'stopRfidReader'])->name('stop');
+    Route::get('status', [RfidController::class, 'getRfidStatus'])->name('status');
+});
+
 Route::middleware('auth')->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('dashboard/stats', [DashboardController::class, 'getDashboardStats'])->name('dashboard.stats');
@@ -30,13 +42,6 @@ Route::middleware('auth')->group(function () {
         Route::get('payments', [MembershipController::class, 'payments'])->name('payments');
         Route::patch('payments/{payment}/status', [MembershipController::class, 'updatePaymentStatus'])->name('payments.update-status');
         Route::get('payments/{payment}/details', [MembershipController::class, 'getPaymentDetails'])->name('payments.details');
-    });
-    
-    // RFID routes
-    Route::prefix('rfid')->name('rfid.')->group(function () {
-        Route::post('tap', [RfidController::class, 'handleCardTap'])->name('tap');
-        Route::get('active-members', [RfidController::class, 'getActiveMembers'])->name('active-members');
-        Route::get('logs', [RfidController::class, 'getRfidLogs'])->name('logs');
     });
     
     // RFID Monitoring Panel

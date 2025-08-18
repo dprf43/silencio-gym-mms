@@ -72,9 +72,11 @@ class RfidController extends Controller
             }
 
             // Check if member has an active session
-            $activeSession = $member->activeSession;
+            $activeSession = ActiveSession::where('member_id', $member->id)
+                ->where('status', 'active')
+                ->first();
 
-            if ($activeSession && $activeSession->status === 'active') {
+            if ($activeSession) {
                 // Member is checking out
                 return $this->handleCheckOut($member, $activeSession, $deviceId);
             } else {
@@ -106,6 +108,27 @@ class RfidController extends Controller
      */
     private function handleCheckIn(Member $member, string $deviceId): JsonResponse
     {
+        // Check if member has any existing active session and deactivate it
+        $existingActiveSession = ActiveSession::where('member_id', $member->id)
+            ->where('status', 'active')
+            ->first();
+            
+        if ($existingActiveSession) {
+            // Deactivate the existing session
+            $existingActiveSession->update([
+                'status' => 'inactive',
+                'check_out_time' => now(),
+                'session_duration' => $existingActiveSession->current_duration,
+            ]);
+            
+            // Update the attendance record
+            $existingActiveSession->attendance->update([
+                'check_out_time' => now(),
+                'status' => 'checked_out',
+                'session_duration' => $existingActiveSession->current_duration,
+            ]);
+        }
+
         // Create attendance record
         $attendance = Attendance::create([
             'member_id' => $member->id,
@@ -198,7 +221,7 @@ class RfidController extends Controller
      */
     public function getActiveMembers(): JsonResponse
     {
-        $activeMembers = ActiveSession::with(['member:id,full_name,uid,membership_plan_id', 'member.membershipPlan:id,name'])
+        $activeMembers = ActiveSession::with(['member:id,full_name,uid,current_plan_type'])
             ->active()
             ->get()
             ->map(function ($session) {
@@ -206,7 +229,7 @@ class RfidController extends Controller
                     'id' => $session->member->id,
                     'name' => $session->member->full_name,
                     'uid' => $session->member->uid,
-                    'membership_plan' => $session->member->membershipPlan?->name ?? 'Unknown',
+                    'membership_plan' => $session->member->current_plan_type ?? 'Unknown',
                     'check_in_time' => $session->check_in_time->format('H:i:s'),
                     'session_duration' => $session->current_duration,
                 ];
@@ -241,5 +264,140 @@ class RfidController extends Controller
             'success' => true,
             'logs' => $logs,
         ]);
+    }
+
+    /**
+     * Start the RFID reader process
+     */
+    public function startRfidReader(Request $request): JsonResponse
+    {
+        try {
+            // Check if RFID reader is already running
+            $isRunning = $this->isRfidReaderRunning();
+            
+            if ($isRunning) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'RFID reader is already running',
+                    'status' => 'running'
+                ]);
+            }
+            
+            // Start the RFID reader process
+            $this->startRfidProcess();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'RFID reader started successfully',
+                'status' => 'running'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to start RFID reader: ' . $e->getMessage(),
+                'status' => 'error'
+            ], 500);
+        }
+    }
+    
+    /**
+     * Stop the RFID reader process
+     */
+    public function stopRfidReader(Request $request): JsonResponse
+    {
+        try {
+            // Stop the RFID reader process
+            $this->stopRfidProcess();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'RFID reader stopped successfully',
+                'status' => 'stopped'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to stop RFID reader: ' . $e->getMessage(),
+                'status' => 'error'
+            ], 500);
+        }
+    }
+    
+    /**
+     * Get RFID reader status
+     */
+    public function getRfidStatus(Request $request): JsonResponse
+    {
+        try {
+            $isRunning = $this->isRfidReaderRunning();
+            
+            return response()->json([
+                'success' => true,
+                'status' => $isRunning ? 'running' : 'stopped',
+                'message' => $isRunning ? 'RFID reader is running' : 'RFID reader is stopped'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get RFID status: ' . $e->getMessage(),
+                'status' => 'error'
+            ], 500);
+        }
+    }
+    
+    /**
+     * Check if RFID reader process is running
+     */
+    private function isRfidReaderRunning(): bool
+    {
+        // Check if Python process is running
+        $output = shell_exec('tasklist /FI "IMAGENAME eq python.exe" /FO CSV 2>nul');
+        
+        if ($output && strpos($output, 'python.exe') !== false) {
+            // Check if our specific script is running by looking at command line
+            $output = shell_exec('wmic process where "name=\'python.exe\'" get commandline 2>nul');
+            
+            if ($output && strpos($output, 'rfid_reader.py') !== false) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Start RFID reader process
+     */
+    private function startRfidProcess(): void
+    {
+        $pythonPath = 'C:\Users\PC\AppData\Local\Programs\Python\Python313\python.exe';
+        $scriptPath = base_path('rfid_reader.py');
+        
+        // Start the RFID reader in background using PowerShell
+        $command = sprintf(
+            'powershell -Command "Start-Process -FilePath \'%s\' -ArgumentList \'%s\' -WindowStyle Hidden"',
+            $pythonPath,
+            $scriptPath
+        );
+        
+        shell_exec($command);
+        
+        // Wait a moment for process to start
+        sleep(3);
+    }
+    
+    /**
+     * Stop RFID reader process
+     */
+    private function stopRfidProcess(): void
+    {
+        // Kill all Python processes running rfid_reader.py
+        shell_exec('taskkill /F /IM python.exe /FI "WINDOWTITLE eq rfid_reader.py" >nul 2>&1');
+        
+        // Also try to kill by process name
+        shell_exec('taskkill /F /IM python.exe >nul 2>&1');
     }
 }

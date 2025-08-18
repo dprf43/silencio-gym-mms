@@ -2,48 +2,55 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class RfidLog extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'card_uid',
         'action',
         'status',
         'message',
-        'card_data',
         'timestamp',
         'device_id',
     ];
 
     protected $casts = [
-        'card_data' => 'array',
         'timestamp' => 'datetime',
     ];
 
-    public function scopeToday($query)
+    /**
+     * Scope for successful events
+     */
+    public function scopeSuccess($query)
     {
-        return $query->whereDate('timestamp', today());
+        return $query->where('status', 'success');
     }
 
+    /**
+     * Scope for failed events
+     */
     public function scopeFailed($query)
     {
         return $query->where('status', 'failed');
     }
 
+    /**
+     * Scope for today's events
+     */
+    public function scopeToday($query)
+    {
+        return $query->whereDate('timestamp', today());
+    }
+
+    /**
+     * Scope for unknown card events
+     */
     public function scopeUnknownCards($query)
     {
         return $query->where('action', 'unknown_card');
-    }
-
-    public function scopeByDevice($query, $deviceId)
-    {
-        return $query->where('device_id', $deviceId);
-    }
-
-    public function getFormattedMessageAttribute(): string
-    {
-        $timestamp = $this->timestamp->format('H:i:s');
-        return "[{$timestamp}] {$this->message}";
     }
 }

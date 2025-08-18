@@ -169,11 +169,12 @@
             loadActiveMembers();
             loadRfidLogs();
             
-            // Auto-refresh every 10 seconds
+            // Auto-refresh every 3 seconds for real-time updates
             setInterval(function() {
                 loadDashboardStats();
                 loadActiveMembers();
-            }, 10000);
+                loadRfidLogs();
+            }, 3000);
         });
 
         // Load dashboard statistics

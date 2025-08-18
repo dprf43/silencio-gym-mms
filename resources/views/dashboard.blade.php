@@ -73,6 +73,33 @@
                 </div>
             </div>
 
+            <!-- RFID Status -->
+            <div class="mb-6">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-gray-900">RFID System Status</h2>
+                        <div id="rfid-status" class="px-3 py-1 rounded-full text-sm font-medium rfid-status stopped">
+                            RFID: STOPPED
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <button onclick="startRfidReader()" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Start RFID Reader
+                        </button>
+                        <button onclick="stopRfidReader()" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10l2 2 4-4"></path>
+                            </svg>
+                            Stop RFID Reader
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Quick Actions -->
             <div class="mb-6">
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

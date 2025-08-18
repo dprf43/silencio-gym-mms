@@ -2,66 +2,69 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
 
 class ActiveSession extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'member_id',
         'attendance_id',
         'check_in_time',
-        'session_duration',
+        'check_out_time',
         'status',
+        'session_duration',
     ];
 
     protected $casts = [
         'check_in_time' => 'datetime',
+        'check_out_time' => 'datetime',
     ];
 
-    public function member(): BelongsTo
+    /**
+     * Get the member that owns this session
+     */
+    public function member()
     {
         return $this->belongsTo(Member::class);
     }
 
-    public function attendance(): BelongsTo
+    /**
+     * Get the attendance record for this session
+     */
+    public function attendance()
     {
         return $this->belongsTo(Attendance::class);
     }
 
-    public function getCurrentDurationAttribute(): string
-    {
-        if ($this->status !== 'active') {
-            return $this->session_duration ?? 'N/A';
-        }
-
-        $duration = $this->check_in_time->diffInSeconds(now());
-        $hours = floor($duration / 3600);
-        $minutes = floor(($duration % 3600) / 60);
-        
-        if ($hours > 0) {
-            return "{$hours}h {$minutes}m";
-        }
-        
-        return "{$minutes}m";
-    }
-
+    /**
+     * Scope for active sessions
+     */
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
 
-    public function scopeByMember($query, $memberId)
+    /**
+     * Get current session duration
+     */
+    public function getCurrentDurationAttribute()
     {
-        return $query->where('member_id', $memberId);
+        if ($this->check_out_time) {
+            return $this->check_in_time->diffForHumans($this->check_out_time, true);
+        }
+        
+        return $this->check_in_time->diffForHumans(now(), true);
     }
 
-    public function updateDuration(): void
+    /**
+     * Check if session is active
+     */
+    public function getIsActiveAttribute()
     {
-        if ($this->status === 'active') {
-            $this->session_duration = $this->current_duration;
-            $this->save();
-        }
+        return $this->status === 'active' && !$this->check_out_time;
     }
 }
